@@ -1,0 +1,19 @@
+﻿<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>我的系统</title>
+    <link href="~/bootstrap/dist/css/bootstrap.css" rel="stylesheet" />
+    <script src="~/jquery/jquery.min.js"></script>
+    <script src="~/lib/jquery-extend.js"></script>
+    <script src="~/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="~/vue/vue.min.js"></script>
+    @RenderSection("HeaderSection", false)
+</head>
+<body>
+    @RenderBody()
+    @RenderSection("FooterSection", false)
+</body>
+</html>

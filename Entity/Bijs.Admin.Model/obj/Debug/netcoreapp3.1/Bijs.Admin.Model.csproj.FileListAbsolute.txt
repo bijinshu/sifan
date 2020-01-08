@@ -1,0 +1,8 @@
+D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Model\bin\Debug\netcoreapp3.1\Bijs.Admin.Model.deps.json
+D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Model\bin\Debug\netcoreapp3.1\Bijs.Admin.Model.dll
+D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Model\obj\Debug\netcoreapp3.1\Bijs.Admin.Model.csprojAssemblyReference.cache
+D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Model\obj\Debug\netcoreapp3.1\Bijs.Admin.Model.AssemblyInfoInputs.cache
+D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Model\obj\Debug\netcoreapp3.1\Bijs.Admin.Model.AssemblyInfo.cs
+D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Model\bin\Debug\netcoreapp3.1\Bijs.Admin.Model.pdb
+D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Model\obj\Debug\netcoreapp3.1\Bijs.Admin.Model.dll
+D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Model\obj\Debug\netcoreapp3.1\Bijs.Admin.Model.pdb
