@@ -78,20 +78,31 @@ namespace Bijs.Admin.WebApi.Controllers
                 return Content("文件不能为空");
             }
             var extension = Path.GetExtension(formFile.FileName);
-            var workSheet = ExcelUtil.GetWorkbook(extension, formFile.OpenReadStream());
-            var list = ExcelUtil.ImportExcelFile<Darunfa>(workSheet, "2001档期费用");
-            var dic = ExcelUtil.ImportExcelFile(workSheet, "价格");
+            var workBook = ExcelUtil.GetWorkbook(extension, formFile.OpenReadStream());
+            var mapList = ExcelUtil.GetMap<Darunfa>();
+            var headerRow = ExcelUtil.FindHeaderRow(workBook, mapList); //寻找标题行
+            var list = ExcelUtil.ImportExcelFile<Darunfa>(headerRow, mapList);
+            var dic = ExcelUtil.ImportExcelFile(workBook, "价格");
             foreach (var item in list)
             {
-                if (!dic.ContainsKey(item.Request))
+                if (!string.IsNullOrEmpty(item.Request) && dic.ContainsKey(item.Request))
                 {
-                    throw new Exception($"未发现{item.Request}的价格");
+                    item.Price = dic[item.Request];
+                    item.Price = string.IsNullOrWhiteSpace(item.Price) ? "0" : Regex.Replace(item.Price, @"\s+", string.Empty);
+                    if (!string.IsNullOrWhiteSpace(item.Size))
+                    {
+                        item.Size = Regex.Replace(item.Size, @"\s+", string.Empty);
+                        if (Regex.IsMatch(item.Size, @"\d+(\.\d+)?\*\d+(\.\d+)?"))
+                        {
+                            var size = Regex.Split(item.Size, @"\*+");
+                            var total = Convert.ToDecimal(size[0]) * Convert.ToDecimal(size[1]) * Convert.ToDecimal(item.Num) * Convert.ToDecimal(item.Price);
+                            total = decimal.Round(total, 2);
+                            item.Total = (total == Convert.ToInt32(total) ? Convert.ToInt32(total) : total).ToString();
+                        }
+                    }
                 }
-                item.Price = dic[item.Request];
-                var size = Regex.Split(item.Size, @"\*+");
-                item.Total = decimal.Round(Convert.ToDecimal(size[0]) * Convert.ToDecimal(size[1]) * Convert.ToDecimal(item.Num) * Convert.ToDecimal(item.Price), 2).ToString();
             }
-            var data = ExcelUtil.CreateExcel(extension, list);
+            var data = ExcelUtil.CreateExcel(extension, list, mapList, headerRow);
             return File(data, "application/vnd.ms-excel", $"{DateTime.Now.ToString("yyyyMMddHHmmss")}-{formFile.FileName}");
         }
 

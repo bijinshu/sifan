@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Bijs.Admin.Util
 {
@@ -19,9 +20,8 @@ namespace Bijs.Admin.Util
         /// <param name="list">实体列表</param>
         /// <param name="mapList">导出文件标题与实体类属性名称映射</param>
         /// <returns></returns>
-        public static byte[] CreateExcel<T>(string fileExtension, List<T> list)
+        public static byte[] CreateExcel<T>(string fileExtension, List<T> list, List<ExcelEntityMap> mapList, IRow oldHeadRow = null)
         {
-            var mapList = GetMap<T>();
             //Create new Excel Workbook
             int maxRowCount = fileExtension == ".xls" ? 65535 : int.MaxValue;
             int maxSheetCount = list.Count / maxRowCount + 1;
@@ -33,7 +33,17 @@ namespace Bijs.Admin.Util
                 var headerRow = sheet.CreateRow(0); //创建标题行
                 for (int ii = 0; ii < mapList.Count; ii++)
                 {
-                    headerRow.CreateCell(ii).SetCellValue(mapList[ii].ExcelColumnTitle);
+                    var cell = headerRow.CreateCell(ii);
+                    cell.SetCellValue(mapList[ii].ExcelColumnTitle);
+                    //if (oldHeadRow != null)
+                    //{
+                    //    var oldCell = oldHeadRow.FirstOrDefault(f => f != null && f.CellType == CellType.String && f.StringCellValue == cell.StringCellValue);
+                    //    if (oldCell != null)
+                    //    {
+
+                    //        cell.CellStyle.CloneStyleFrom(oldCell.CellStyle);
+                    //    }
+                    //}
                 }
                 sheet.CreateFreezePane(0, 1, 0, 1); //冻结标题行
                 int startIndex = i * maxRowCount;
@@ -94,12 +104,10 @@ namespace Bijs.Admin.Util
         /// <param name="fileExtension">文件扩展名</param>
         /// <param name="mapList">导入文件标题与实体类属性名称映射</param>
         /// <returns></returns>
-        public static List<T> ImportExcelFile<T>(IWorkbook workbook, string sheetName) where T : class, new()
+        public static List<T> ImportExcelFile<T>(IRow headerRow, IList<ExcelEntityMap> mapList) where T : class, new()
         {
-            var mapList = GetMap<T>();
             var result = new List<T>();
-            ISheet sheet = GetSheet(workbook, sheetName);
-            IRow headerRow = sheet.GetRow(0); //第一行为标题行
+            ISheet sheet = headerRow.Sheet;
             int cellCount = headerRow.LastCellNum; //LastCellNum = PhysicalNumberOfCells
             int rowCount = sheet.LastRowNum; //LastRowNum = PhysicalNumberOfRows - 1
             var properties = typeof(T).GetProperties();
@@ -107,18 +115,21 @@ namespace Bijs.Admin.Util
             //handling header.
             for (int i = headerRow.FirstCellNum; i < cellCount; i++)
             {
-                var excelHeadName = headerRow.GetCell(i).StringCellValue;
-                var entity = mapList.FirstOrDefault(f => f.ExcelColumnTitle == excelHeadName);
-                if (entity != null && properties.Any(a => a.Name == entity.EntityPropName))
+                var cell = headerRow.GetCell(i);
+                if (cell != null && cell.CellType == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue))
                 {
-                    dic[i] = properties.Single(f => f.Name == entity.EntityPropName);
+                    var entity = mapList.FirstOrDefault(f => f.ExcelColumnTitle == cell.StringCellValue);
+                    if (entity != null && properties.Any(a => a.Name == entity.EntityPropName))
+                    {
+                        dic[i] = properties.Single(f => f.Name == entity.EntityPropName);
+                    }
                 }
             }
             if (dic.Count != mapList.Count)
             {
                 throw new Exception($"Excel中，仅允许如下标题：[{string.Join(',', mapList.Select(t => t.ExcelColumnTitle))}]");
             }
-            for (int i = (sheet.FirstRowNum + 1); i <= rowCount; i++)
+            for (int i = headerRow.RowNum + 1; i <= rowCount; i++)
             {
                 IRow row = sheet.GetRow(i);
                 if (row != null)
@@ -158,6 +169,27 @@ namespace Bijs.Admin.Util
             return dic;
         }
 
+        public static IRow FindHeaderRow(IWorkbook workBook, IList<ExcelEntityMap> list)
+        {
+            for (int i = 0; i < workBook.NumberOfSheets; i++)
+            {
+                ISheet sheet = workBook.GetSheetAt(i);
+                if (sheet.FirstRowNum < sheet.LastRowNum)
+                {
+                    for (int j = sheet.FirstRowNum; j <= sheet.LastRowNum; j++)
+                    {
+                        var row = sheet.GetRow(j);
+                        var headers = row.Select(s => GetCellValue(s)).Where(f => !string.IsNullOrEmpty(f.Trim())).Select(s => Regex.Replace(s, @"\s+", string.Empty)).ToList();
+                        if (list.All(a => headers.Contains(a.ExcelColumnTitle)))
+                        {
+                            return row;
+                        }
+                    }
+                }
+            }
+            throw new Exception("未找到标题行");
+        }
+
         public static List<ExcelEntityMap> GetMap<T>()
         {
             var list = new List<ExcelEntityMap>();
@@ -175,7 +207,7 @@ namespace Bijs.Admin.Util
                 }
                 else
                 {
-                    list.Add(new ExcelEntityMap(attribute.Value, prop.Name));
+                    list.Add(new ExcelEntityMap(Regex.Replace(attribute.Value, @"\s+", string.Empty), prop.Name));
                 }
             }
             return list;
