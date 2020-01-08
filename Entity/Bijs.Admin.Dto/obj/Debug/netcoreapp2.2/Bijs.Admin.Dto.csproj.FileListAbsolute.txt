@@ -1,8 +1,0 @@
-D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Dto\bin\Debug\netcoreapp2.2\Bijs.Admin.Dto.deps.json
-D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Dto\bin\Debug\netcoreapp2.2\Bijs.Admin.Dto.dll
-D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Dto\bin\Debug\netcoreapp2.2\Bijs.Admin.Dto.pdb
-D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Dto\obj\Debug\netcoreapp2.2\Bijs.Admin.Dto.AssemblyInfoInputs.cache
-D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Dto\obj\Debug\netcoreapp2.2\Bijs.Admin.Dto.AssemblyInfo.cs
-D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Dto\obj\Debug\netcoreapp2.2\Bijs.Admin.Dto.dll
-D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Dto\obj\Debug\netcoreapp2.2\Bijs.Admin.Dto.pdb
-D:\AxonProject\bijs\Bijs.Admin\Entity\Bijs.Admin.Dto\obj\Debug\netcoreapp2.2\Bijs.Admin.Dto.csprojAssemblyReference.cache

@@ -1,0 +1,11 @@
+/.vs
+/Entity/Bijs.Admin.Dto/obj
+/Entity/Bijs.Admin.Model/obj
+/Orm/Bijs.Admin.Orm/obj
+/Util/Bijs.Admin.Util/obj
+/Bijs.Admin.WebApi/obj
+/Entity/Bijs.Admin.Dto/bin
+/Entity/Bijs.Admin.Model/bin
+/Orm/Bijs.Admin.Orm/bin
+/Util/Bijs.Admin.Util/bin
+/Bijs.Admin.WebApi/bin
