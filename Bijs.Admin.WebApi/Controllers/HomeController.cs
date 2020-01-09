@@ -8,6 +8,7 @@ using Bijs.Admin.Dto;
 using Bijs.Admin.Model;
 using Bijs.Admin.Orm;
 using Bijs.Admin.Util;
+using Bijs.Admin.Util.Encrypt;
 using Bijs.Admin.WebApi.Entity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -29,6 +30,7 @@ namespace Bijs.Admin.WebApi.Controllers
         {
             return View();
         }
+
         [HttpPost]
         public BaseOutput RefreshPrice([FromBody] string value)
         {
@@ -58,64 +60,63 @@ namespace Bijs.Admin.WebApi.Controllers
             return Success();
         }
 
-
-
-        // POST api/values
         [HttpPost]
-        public ActionResult UploadExcelFile(List<IFormFile> files)
+        public BaseOutput UploadExcelFile(List<IFormFile> files, string priceSheetName)
         {
             if (files == null || files.Count == 0)
             {
-                return Content("未上传文件");
+                return Fail("未上传文件");
             }
             if (files.Count != 1)
             {
-                return Content("一次只能上传一个文件");
+                return Fail("一次只能上传一个文件");
             }
             var formFile = files[0];
             if (formFile.Length == 0)
             {
-                return Content("文件不能为空");
+                return Fail("文件不能为空");
             }
-            var extension = Path.GetExtension(formFile.FileName);
-            var workBook = ExcelUtil.GetWorkbook(extension, formFile.OpenReadStream());
-            var mapList = ExcelUtil.GetMap<Darunfa>();
-            var headerRow = ExcelUtil.FindHeaderRow(workBook, mapList); //寻找标题行
-            var list = ExcelUtil.ImportExcelFile<Darunfa>(headerRow, mapList);
-            var dic = ExcelUtil.ImportExcelFile(workBook, "价格");
-            foreach (var item in list)
+            var now = DateTime.Now;
+            var directory = Path.Combine(Directory.GetCurrentDirectory(), "files", now.ToString("yyyy"), now.ToString("MM"), now.ToString("dd"));
+            if (!Directory.Exists(directory))
             {
-                if (!string.IsNullOrEmpty(item.Request) && dic.ContainsKey(item.Request))
+                Directory.CreateDirectory(directory);
+            }
+            var fileName = $"{MD5.Encrypt(formFile.OpenReadStream())}-{formFile.FileName}";
+            if (!System.IO.File.Exists(Path.Combine(directory, fileName)))
+            {
+                var extension = Path.GetExtension(formFile.FileName);
+                var workBook = ExcelUtil.GetWorkbook(extension, formFile.OpenReadStream());
+                var mapList = ExcelUtil.GetMap<Darunfa>();
+                var headerRow = ExcelUtil.FindHeaderRow(workBook, mapList); //寻找标题行
+                var list = ExcelUtil.ImportExcelFile<Darunfa>(headerRow, mapList);
+                var dic = ExcelUtil.ImportExcelFile(workBook, priceSheetName);
+                foreach (var item in list)
                 {
-                    item.Price = dic[item.Request];
-                    item.Price = string.IsNullOrWhiteSpace(item.Price) ? "0" : Regex.Replace(item.Price, @"\s+", string.Empty);
-                    if (!string.IsNullOrWhiteSpace(item.Size))
+                    if (!string.IsNullOrEmpty(item.Request) && dic.ContainsKey(item.Request))
                     {
-                        item.Size = Regex.Replace(item.Size, @"\s+", string.Empty);
-                        if (Regex.IsMatch(item.Size, @"\d+(\.\d+)?\*\d+(\.\d+)?"))
+                        item.Price = dic[item.Request];
+                        item.Price = string.IsNullOrWhiteSpace(item.Price) ? "0" : Regex.Replace(item.Price, @"\s+", string.Empty);
+                        if (!string.IsNullOrWhiteSpace(item.Size))
                         {
-                            var size = Regex.Split(item.Size, @"\*+");
-                            var total = Convert.ToDecimal(size[0]) * Convert.ToDecimal(size[1]) * Convert.ToDecimal(item.Num) * Convert.ToDecimal(item.Price);
-                            total = decimal.Round(total, 2);
-                            item.Total = (total == Convert.ToInt32(total) ? Convert.ToInt32(total) : total).ToString();
+                            item.Size = Regex.Replace(item.Size, @"\s+", string.Empty);
+                            if (Regex.IsMatch(item.Size, @"\d+(\.\d+)?\*\d+(\.\d+)?"))
+                            {
+                                var size = Regex.Split(item.Size, @"\*+");
+                                var total = Convert.ToDecimal(size[0]) * Convert.ToDecimal(size[1]) * Convert.ToDecimal(item.Num) * Convert.ToDecimal(item.Price);
+                                total = decimal.Round(total, 2);
+                                item.Total = (total == Convert.ToInt32(total) ? Convert.ToInt32(total) : total).ToString();
+                            }
                         }
                     }
                 }
+                var data = ExcelUtil.CreateExcel(extension, list, mapList, headerRow);
+                if (!System.IO.File.Exists(Path.Combine(directory, fileName)))
+                    System.IO.File.WriteAllBytes(Path.Combine(directory, fileName), data);
             }
-            var data = ExcelUtil.CreateExcel(extension, list, mapList, headerRow);
-            return File(data, "application/vnd.ms-excel", $"{DateTime.Now.ToString("yyyyMMddHHmmss")}-{formFile.FileName}");
-        }
-
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
+            var output = new BaseOutput<string>();
+            output.Data = $"/files/{now.ToString("yyyy")}/{now.ToString("MM")}/{now.ToString("dd")}/{fileName}";
+            return output;
         }
     }
 }

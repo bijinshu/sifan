@@ -5,6 +5,12 @@
     <UserSecretsId>d4af5d56-6832-4915-b17a-d4e16bd401fc</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="files\**" />
+    <Content Remove="files\**" />
+    <EmbeddedResource Remove="files\**" />
+    <None Remove="files\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />

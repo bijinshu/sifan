@@ -31,19 +31,25 @@ namespace Bijs.Admin.Util
             {
                 var sheet = workbook.CreateSheet(string.Format("第{0}页", i + 1)); //创建表单
                 var headerRow = sheet.CreateRow(0); //创建标题行
+                if (oldHeadRow != null)
+                {
+                    headerRow.HeightInPoints = oldHeadRow.HeightInPoints;
+                }
                 for (int ii = 0; ii < mapList.Count; ii++)
                 {
                     var cell = headerRow.CreateCell(ii);
                     cell.SetCellValue(mapList[ii].ExcelColumnTitle);
-                    //if (oldHeadRow != null)
-                    //{
-                    //    var oldCell = oldHeadRow.FirstOrDefault(f => f != null && f.CellType == CellType.String && f.StringCellValue == cell.StringCellValue);
-                    //    if (oldCell != null)
-                    //    {
-
-                    //        cell.CellStyle.CloneStyleFrom(oldCell.CellStyle);
-                    //    }
-                    //}
+                    if (oldHeadRow != null)
+                    {
+                        var oldCell = oldHeadRow.FirstOrDefault(f => f != null && f.CellType == CellType.String && f.StringCellValue == cell.StringCellValue);
+                        if (oldCell != null)
+                        {
+                            var cellStyle = workbook.CreateCellStyle();
+                            cellStyle.CloneStyleFrom(oldCell.CellStyle);
+                            cell.CellStyle = cellStyle;
+                            sheet.SetColumnWidth(cell.ColumnIndex, oldCell.Sheet.GetColumnWidth(oldCell.ColumnIndex));
+                        }
+                    }
                 }
                 sheet.CreateFreezePane(0, 1, 0, 1); //冻结标题行
                 int startIndex = i * maxRowCount;
@@ -169,25 +175,44 @@ namespace Bijs.Admin.Util
             return dic;
         }
 
-        public static IRow FindHeaderRow(IWorkbook workBook, IList<ExcelEntityMap> list)
+        public static IRow FindHeaderRow(IWorkbook workBook, IList<ExcelEntityMap> list, string sheetName = null)
         {
-            for (int i = 0; i < workBook.NumberOfSheets; i++)
+            if (string.IsNullOrEmpty(sheetName))
             {
-                ISheet sheet = workBook.GetSheetAt(i);
-                if (sheet.FirstRowNum < sheet.LastRowNum)
+                for (int i = 0; i < workBook.NumberOfSheets; i++)
                 {
-                    for (int j = sheet.FirstRowNum; j <= sheet.LastRowNum; j++)
-                    {
-                        var row = sheet.GetRow(j);
-                        var headers = row.Select(s => GetCellValue(s)).Where(f => !string.IsNullOrEmpty(f.Trim())).Select(s => Regex.Replace(s, @"\s+", string.Empty)).ToList();
-                        if (list.All(a => headers.Contains(a.ExcelColumnTitle)))
-                        {
-                            return row;
-                        }
-                    }
+                    ISheet sheet = workBook.GetSheetAt(i);
+                    IRow row = FindHeaderRow(list, sheet);
+                    if (row != null) return row;
+                }
+            }
+            else
+            {
+                ISheet sheet = workBook.GetSheet(sheetName);
+                if (sheet != null)
+                {
+                    IRow row = FindHeaderRow(list, sheet);
+                    if (row != null) return row;
                 }
             }
             throw new Exception("未找到标题行");
+        }
+
+        public static IRow FindHeaderRow(IList<ExcelEntityMap> list, ISheet sheet)
+        {
+            if (sheet.FirstRowNum < sheet.LastRowNum)
+            {
+                for (int j = sheet.FirstRowNum; j <= sheet.LastRowNum; j++)
+                {
+                    var row = sheet.GetRow(j);
+                    var headers = row.Select(s => GetCellValue(s)).Where(f => !string.IsNullOrEmpty(f.Trim())).Select(s => Regex.Replace(s, @"\s+", string.Empty)).ToList();
+                    if (list.All(a => headers.Contains(a.ExcelColumnTitle)))
+                    {
+                        return row;
+                    }
+                }
+            }
+            return null;
         }
 
         public static List<ExcelEntityMap> GetMap<T>()

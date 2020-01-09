@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Bijs.Admin.WebApi.Extensions;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Serialization;
@@ -47,6 +49,17 @@ namespace Bijs.Admin.WebApi
                 app.UseDeveloperExceptionPage();
             }
             app.UseStaticFiles();
+            var fileDir = Path.Combine(Directory.GetCurrentDirectory(), "files");
+            if (!Directory.Exists(fileDir))
+            {
+                Directory.CreateDirectory(fileDir);
+            }
+            app.UseFileServer(new FileServerOptions
+            {
+                RequestPath = new Microsoft.AspNetCore.Http.PathString("/files"),
+                FileProvider = new PhysicalFileProvider(fileDir)
+            });
+
             //app.UseHttpsRedirection();
             app.UseMvc(routes =>
             {

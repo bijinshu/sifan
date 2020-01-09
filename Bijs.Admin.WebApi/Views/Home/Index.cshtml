@@ -4,24 +4,31 @@
 <div class="container" id="productInfo">
     <div class="row">
         <div class="col-md-12">
-            <form class="form-horizontal" role="form" style="margin-top:10px;" action="/Home/UploadExcelFile" method="post" enctype="multipart/form-data">
-                @*<div class="form-group">
-                        <label for="ContactName" class="col-md-3 control-label hidden-xs hidden-sm">设置价格</label>
-                        <div class="col-md-8">
-                            <input v-model="ContactName" type="text" class="form-control"  placeholder="请选择模板文件">
-                            <textarea v-model="price" class="form-control" rows="20">请输入价格 用空格分隔</textarea>
+            <form class="form-horizontal" role="form" style="margin-top:10px;">
+                <div class="form-group">
+                    <label for="ContactName" class="col-md-3 control-label hidden-xs hidden-sm">设置价格表单页名称</label>
+                    <div class="col-md-8">
+                        <input v-model="priceSheetName" class="form-control" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="ContactName" class="col-md-3 control-label hidden-xs hidden-sm">上传进度</label>
+                    <div class="col-md-8">
+                        <div class="progress">
+                            <div id="progressBar" class="progress-bar progress-bar-striped" style="width:0%"></div>
                         </div>
-                    </div>*@
+                    </div>
+                </div>
                 <div class="form-group">
                     <label for="ContactName" class="col-md-3 control-label hidden-xs hidden-sm">上传文件</label>
                     <div class="col-md-8">
-                        <input type="file" name="files" class="form-control" placeholder="请选择模板文件">
+                        <input type="file" id="files" class="form-control" placeholder="请选择模板文件" v-on:click="$('#progressBar').css('width','0%')">
                     </div>
                 </div>
                 <div class="form-group">
                     <div class="col-md-8 col-md-offset-3">
-                        <button class="btn btn-info pull-left" v-on:click.stop.prevent="refreshPrice"> 刷新价格</button>
-                        <button class="btn btn-primary pull-right" type="submit">上传</button>
+                        @*<button class="btn btn-info pull-left" v-on:click.stop.prevent="refreshPrice"> 刷新价格</button>*@
+                        <button class="btn btn-primary pull-right" id="btnUpload" v-on:click.stop.prevent="upload">上传</button>
                     </div>
                 </div>
             </form>
@@ -37,7 +44,7 @@
         new Vue({
             el: "#productInfo",
             data: {
-                price: ""
+                priceSheetName: "价格"
             },
             methods: {
                 refreshPrice: function () {
@@ -47,8 +54,15 @@
                         });
                     }
                 },
-                getPrice: function () {
-
+                upload: function () {
+                    $.upload('/Home/UploadExcelFile?priceSheetName=' + encodeURI(this.priceSheetName), document.getElementById("files").files[0], function (loaded, total) {
+                        $("#progressBar").css("width", (loaded / total) * 100 + '%');
+                    }, function (rsp) {
+                        if (rsp.Data)
+                            window.open(rsp.Data, "_blank");
+                        else
+                            alert(rsp.Msg);
+                    });
                 }
             },
             computed: {
