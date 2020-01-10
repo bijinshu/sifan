@@ -3,7 +3,7 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <UserSecretsId>d4af5d56-6832-4915-b17a-d4e16bd401fc</UserSecretsId>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <!--<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>-->
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="files\**" />
@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.App"/>
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.9.10" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.4" />
@@ -26,6 +26,12 @@
     <ProjectReference Include="..\Entity\Bijs.Admin.Model\Bijs.Admin.Model.csproj" />
     <ProjectReference Include="..\Orm\Bijs.Admin.Orm\Bijs.Admin.Orm.csproj" />
     <ProjectReference Include="..\Util\Bijs.Admin.Util\Bijs.Admin.Util.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="start.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

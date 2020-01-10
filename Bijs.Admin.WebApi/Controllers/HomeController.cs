@@ -25,7 +25,7 @@ namespace Bijs.Admin.WebApi.Controllers
             this.factory = factory;
         }
 
-        [HttpGet]
+        [HttpGet, HttpGet("/")]
         public ActionResult Index()
         {
             return View();
@@ -63,34 +63,24 @@ namespace Bijs.Admin.WebApi.Controllers
         [HttpPost]
         public BaseOutput UploadExcelFile(List<IFormFile> files, string priceSheetName)
         {
-            if (files == null || files.Count == 0)
-            {
-                return Fail("未上传文件");
-            }
-            if (files.Count != 1)
-            {
-                return Fail("一次只能上传一个文件");
-            }
+            if (files == null || files.Count == 0) return Fail("未上传文件");
+            if (files.Count != 1) return Fail("一次只能上传一个文件");
             var formFile = files[0];
-            if (formFile.Length == 0)
-            {
-                return Fail("文件不能为空");
-            }
+            if (formFile.Length == 0) return Fail("文件不能为空");
             var now = DateTime.Now;
             var directory = Path.Combine(Directory.GetCurrentDirectory(), "files", now.ToString("yyyy"), now.ToString("MM"), now.ToString("dd"));
-            if (!Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
+            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
             var fileName = $"{MD5.Encrypt(formFile.OpenReadStream())}-{formFile.FileName}";
             if (!System.IO.File.Exists(Path.Combine(directory, fileName)))
             {
                 var extension = Path.GetExtension(formFile.FileName);
                 var workBook = ExcelUtil.GetWorkbook(extension, formFile.OpenReadStream());
+                var dic = ExcelUtil.ImportExcelFile(workBook, priceSheetName);
+                if (dic.Count == 0) return Fail("价格列表为空");
+                if (dic.Values.Any(f => !Regex.IsMatch(StringUtil.RemoveSpace(f), @"\d+(\.\d+)?"))) return Fail("价格不格式不正确");
                 var mapList = ExcelUtil.GetMap<Darunfa>();
                 var headerRow = ExcelUtil.FindHeaderRow(workBook, mapList); //寻找标题行
                 var list = ExcelUtil.ImportExcelFile<Darunfa>(headerRow, mapList);
-                var dic = ExcelUtil.ImportExcelFile(workBook, priceSheetName);
                 foreach (var item in list)
                 {
                     if (!string.IsNullOrEmpty(item.Request) && dic.ContainsKey(item.Request))
@@ -111,8 +101,7 @@ namespace Bijs.Admin.WebApi.Controllers
                     }
                 }
                 var data = ExcelUtil.CreateExcel(extension, list, mapList, headerRow);
-                if (!System.IO.File.Exists(Path.Combine(directory, fileName)))
-                    System.IO.File.WriteAllBytes(Path.Combine(directory, fileName), data);
+                if (!System.IO.File.Exists(Path.Combine(directory, fileName))) System.IO.File.WriteAllBytes(Path.Combine(directory, fileName), data);
             }
             var output = new BaseOutput<string>();
             output.Data = $"/files/{now.ToString("yyyy")}/{now.ToString("MM")}/{now.ToString("dd")}/{fileName}";

@@ -54,6 +54,7 @@ namespace Bijs.Admin.WebApi
             {
                 Directory.CreateDirectory(fileDir);
             }
+
             app.UseFileServer(new FileServerOptions
             {
                 RequestPath = new Microsoft.AspNetCore.Http.PathString("/files"),
@@ -63,9 +64,7 @@ namespace Bijs.Admin.WebApi
             //app.UseHttpsRedirection();
             app.UseMvc(routes =>
             {
-                routes.MapRoute(
-                       name: "default",
-                       template: "{controller=Home}/{action=Index}/{id?}");
+                routes.MapRoute("default", "{controller=Home}/{action=Index}");
             });
         }
     }

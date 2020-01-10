@@ -1,0 +1,13 @@
+{
+  "apps": [
+    {
+      "name": "Bijs.Sifan",
+      "script": "start.sh",
+      "watch": false,
+      "ignore_watch": [],
+      "out_file": "/websites/logs/Bijs.Sifan_out.log",
+      "error_file": "/websites/logs/Bijs.Sifan_error.log",
+      "max_memory_restart": "1G"
+    }
+  ]
+}

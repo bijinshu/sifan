@@ -41,7 +41,7 @@ namespace Bijs.Admin.Util
                     cell.SetCellValue(mapList[ii].ExcelColumnTitle);
                     if (oldHeadRow != null)
                     {
-                        var oldCell = oldHeadRow.FirstOrDefault(f => f != null && f.CellType == CellType.String && f.StringCellValue == cell.StringCellValue);
+                        var oldCell = oldHeadRow.FirstOrDefault(f => f != null && f.CellType == CellType.String && StringUtil.RemoveSpace(f.StringCellValue) == cell.StringCellValue);
                         if (oldCell != null)
                         {
                             var cellStyle = workbook.CreateCellStyle();
@@ -67,7 +67,11 @@ namespace Bijs.Admin.Util
                                 throw new Exception($"属性{mapList[k].EntityPropName}不存在");
                             }
                             var value = prop.GetValue(item, null);
-                            row.CreateCell(k).SetCellValue((value ?? string.Empty).ToString());
+                            var cell = row.CreateCell(k);
+                            cell.SetCellValue((value ?? string.Empty).ToString());
+                            cell.CellStyle.Alignment = HorizontalAlignment.Center;
+                            cell.CellStyle.VerticalAlignment = VerticalAlignment.Center;
+                            cell.CellStyle.SetFont(headerRow.GetCell(cell.ColumnIndex).CellStyle.GetFont(workbook));
                         }
                     }
                     else
@@ -110,21 +114,21 @@ namespace Bijs.Admin.Util
         /// <param name="fileExtension">文件扩展名</param>
         /// <param name="mapList">导入文件标题与实体类属性名称映射</param>
         /// <returns></returns>
-        public static List<T> ImportExcelFile<T>(IRow headerRow, IList<ExcelEntityMap> mapList) where T : class, new()
+        public static List<T> ImportExcelFile<T>(IRow srcHeaderRow, IList<ExcelEntityMap> mapList) where T : class, new()
         {
             var result = new List<T>();
-            ISheet sheet = headerRow.Sheet;
-            int cellCount = headerRow.LastCellNum; //LastCellNum = PhysicalNumberOfCells
-            int rowCount = sheet.LastRowNum; //LastRowNum = PhysicalNumberOfRows - 1
+            ISheet srcSheet = srcHeaderRow.Sheet;
+            int cellCount = srcHeaderRow.LastCellNum; //LastCellNum = PhysicalNumberOfCells
+            int rowCount = srcSheet.LastRowNum; //LastRowNum = PhysicalNumberOfRows - 1
             var properties = typeof(T).GetProperties();
             var dic = new Dictionary<int, PropertyInfo>();
             //handling header.
-            for (int i = headerRow.FirstCellNum; i < cellCount; i++)
+            for (int i = srcHeaderRow.FirstCellNum; i < cellCount; i++)
             {
-                var cell = headerRow.GetCell(i);
+                var cell = srcHeaderRow.GetCell(i);
                 if (cell != null && cell.CellType == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue))
                 {
-                    var entity = mapList.FirstOrDefault(f => f.ExcelColumnTitle == cell.StringCellValue);
+                    var entity = mapList.SingleOrDefault(f => f.ExcelColumnTitle == StringUtil.RemoveSpace(cell.StringCellValue));
                     if (entity != null && properties.Any(a => a.Name == entity.EntityPropName))
                     {
                         dic[i] = properties.Single(f => f.Name == entity.EntityPropName);
@@ -133,20 +137,20 @@ namespace Bijs.Admin.Util
             }
             if (dic.Count != mapList.Count)
             {
-                throw new Exception($"Excel中，仅允许如下标题：[{string.Join(',', mapList.Select(t => t.ExcelColumnTitle))}]");
+                throw new Exception($"Excel中的标题应为：[{string.Join(',', mapList.Select(t => t.ExcelColumnTitle))}]");
             }
-            for (int i = headerRow.RowNum + 1; i <= rowCount; i++)
+            for (int i = srcHeaderRow.RowNum + 1; i <= rowCount; i++)
             {
-                IRow row = sheet.GetRow(i);
-                if (row != null)
+                IRow srcRow = srcSheet.GetRow(i);
+                if (srcRow != null)
                 {
                     var entity = new T();
-                    for (int j = row.FirstCellNum; j < cellCount; j++)
+                    for (int j = srcRow.FirstCellNum; j < cellCount; j++)
                     {
-                        if (row.GetCell(j) != null && dic.ContainsKey(j))
+                        if (dic.ContainsKey(j) && srcRow.GetCell(j) != null)
                         {
                             var property = dic[j];
-                            property.SetValue(entity, GetCellValue(row.GetCell(j)));
+                            property.SetValue(entity, GetCellValue(srcRow.GetCell(j)));
                         }
                     }
                     result.Add(entity);
@@ -166,9 +170,9 @@ namespace Bijs.Admin.Util
                 {
                     var column0 = GetCellValue(row.GetCell(0));
                     var column1 = GetCellValue(row.GetCell(1));
-                    if (!string.IsNullOrEmpty(column0) && !string.IsNullOrEmpty(column1))
+                    if (!string.IsNullOrWhiteSpace(column0) && !string.IsNullOrWhiteSpace(column1))
                     {
-                        dic[column0] = column1;
+                        dic[column0.Trim()] = column1.Trim();
                     }
                 }
             }
@@ -205,7 +209,7 @@ namespace Bijs.Admin.Util
                 for (int j = sheet.FirstRowNum; j <= sheet.LastRowNum; j++)
                 {
                     var row = sheet.GetRow(j);
-                    var headers = row.Select(s => GetCellValue(s)).Where(f => !string.IsNullOrEmpty(f.Trim())).Select(s => Regex.Replace(s, @"\s+", string.Empty)).ToList();
+                    var headers = row.Select(s => GetCellValue(s)).Where(f => !string.IsNullOrEmpty(f.Trim())).Select(s => StringUtil.RemoveSpace(s)).ToList();
                     if (list.All(a => headers.Contains(a.ExcelColumnTitle)))
                     {
                         return row;
@@ -232,7 +236,7 @@ namespace Bijs.Admin.Util
                 }
                 else
                 {
-                    list.Add(new ExcelEntityMap(Regex.Replace(attribute.Value, @"\s+", string.Empty), prop.Name));
+                    list.Add(new ExcelEntityMap(StringUtil.RemoveSpace(attribute.Value), prop.Name));
                 }
             }
             return list;
@@ -299,11 +303,8 @@ namespace Bijs.Admin.Util
                     return cell.ErrorCellValue.ToString();
                 case CellType.Numeric:
                     return DateUtil.IsCellDateFormatted(cell) ? cell.DateCellValue.ToString() : cell.NumericCellValue.ToString();
-                case CellType.Unknown:
-                default:
-                    return cell.ToString();
                 case CellType.String:
-                    return cell.StringCellValue;
+                    return cell.StringCellValue.Trim();
                 case CellType.Formula:
                     try
                     {
@@ -315,8 +316,10 @@ namespace Bijs.Admin.Util
                     {
                         return cell.NumericCellValue.ToString();
                     }
+                case CellType.Unknown:
+                default:
+                    return cell.ToString().Trim();
             }
         }
-
     }
 }

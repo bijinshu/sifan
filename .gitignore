@@ -9,3 +9,7 @@
 /Orm/Bijs.Admin.Orm/bin
 /Util/Bijs.Admin.Util/bin
 /Bijs.Admin.WebApi/bin
+/Bijs.Admin.WebApi/Properties/PublishProfiles
+/Bijs.Admin.WebApi/files
+/Bijs.Admin.WebApi/.config
+/Bijs.Admin.WebApi/*.user
